@@ -48,7 +48,7 @@ def receive_metrics(data: MetricData):
 def get_metrics():
     # Pulisce metriche vecchie
     clean_old_metrics()
-    print("metrics getting...")
+    print("metrics getting...!!!")
     avg_by_sentiment = {}
     for sent in count_by_sentiment:
         if count_by_sentiment[sent] > 0:
