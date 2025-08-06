@@ -4,35 +4,19 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-# Memorizzazione temporanea metriche in RAM
+# Memorizzazione temporanea delle metriche
 metrics_store = {
     "metrics_received_total": 0,
-    "sentiment_count": {
-        "positive": 0,
-        "neutral": 0,
-        "negative": 0
-    },
-    "value_distribution_sum": {
-        "positive": 0.0,
-        "neutral": 0.0,
-        "negative": 0.0
-    },
-    "value_distribution_count": {
-        "positive": 0,
-        "neutral": 0,
-        "negative": 0
-    },
-    "text_length_sum": {
-        "positive": 0,
-        "neutral": 0,
-        "negative": 0
-    }
+    "sentiment_count": {},
+    "value_distribution_sum": {},
+    "value_distribution_count": {},
+    "text_length_sum": {}
 }
 
 class MetricData(BaseModel):
     sentiment: str
     value: float
-    text: str  # aggiungo testo per lunghezza
+    text: str
 
 @app.post("/metrics")
 async def receive_metrics(data: MetricData):
@@ -42,7 +26,7 @@ async def receive_metrics(data: MetricData):
 
     metrics_store["metrics_received_total"] += 1
 
-    # Inizializzo se nuovo sentiment
+    # Inizializza se nuovo sentiment
     if sentiment not in metrics_store["sentiment_count"]:
         metrics_store["sentiment_count"][sentiment] = 0
         metrics_store["value_distribution_sum"][sentiment] = 0.0
@@ -58,23 +42,27 @@ async def receive_metrics(data: MetricData):
 
 @app.get("/metrics-json")
 async def get_metrics_json():
-    avg_values = {}
-    avg_lengths = {}
+    sentiments = []
 
-    for sentiment in metrics_store["value_distribution_sum"]:
-        count = metrics_store["value_distribution_count"].get(sentiment, 0)
-        if count > 0:
-            avg_values[sentiment] = metrics_store["value_distribution_sum"][sentiment] / count
-            avg_lengths[sentiment] = metrics_store["text_length_sum"][sentiment] / count
-        else:
-            avg_values[sentiment] = 0.0
-            avg_lengths[sentiment] = 0.0
+    for sentiment in metrics_store["sentiment_count"]:
+        count = metrics_store["sentiment_count"][sentiment]
+        value_sum = metrics_store["value_distribution_sum"].get(sentiment, 0.0)
+        value_count = metrics_store["value_distribution_count"].get(sentiment, 0)
+        length_sum = metrics_store["text_length_sum"].get(sentiment, 0)
+
+        value_avg = value_sum / value_count if value_count > 0 else 0.0
+        text_length_avg = length_sum / value_count if value_count > 0 else 0.0
+
+        sentiments.append({
+            "label": sentiment,
+            "count": count,
+            "value_avg": round(value_avg, 4),
+            "text_length_avg": round(text_length_avg, 2)
+        })
 
     output = {
         "metrics_received_total": metrics_store["metrics_received_total"],
-        "sentiment_count": metrics_store["sentiment_count"],
-        "value_distribution_avg": avg_values,
-        "text_length_avg": avg_lengths
+        "sentiments": sentiments
     }
 
     return JSONResponse(content=output)
