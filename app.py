@@ -40,7 +40,7 @@ async def receive_metrics(data: MetricData):
 
     return {"message": "Metric received"}
 
-@app.get("/metrics-json")
+@app.get("/metrics_data")
 async def get_metrics_json():
     sentiments = []
 
