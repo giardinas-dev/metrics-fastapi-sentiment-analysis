@@ -39,10 +39,11 @@ async def receive_metrics(data: MetricData):
     metrics_store["text_length_sum"][sentiment] += text_length
 
     return {"message": "Metric received"}
-
 @app.get("/metrics_data")
 async def get_metrics_json():
     sentiments = []
+    counts = []
+    lengths = []
 
     for sentiment in metrics_store["sentiment_count"]:
         count = metrics_store["sentiment_count"][sentiment]
@@ -60,9 +61,24 @@ async def get_metrics_json():
             "text_length_avg": round(text_length_avg, 2)
         })
 
-    output = {
-        "metrics_received_total": metrics_store["metrics_received_total"],
-        "sentiments": sentiments
-    }
+        counts.append(count)
+        lengths.append(text_length_avg)
+
+    # Normalizzazione min-max
+    count_min, count_max = min(counts), max(counts)
+    length_min, length_max = min(lengths), max(lengths)
+
+    for s in sentiments:
+        # Normalizza count
+        s["count_norm"] = (
+            (s["count"] - count_min) / (count_max - count_min)
+            if count_max != count_min else 1.0
+        )
+        # Normalizza text_length_avg
+        s["text_length_norm"] = (
+            (s["text_length_avg"] - length_min) / (length_max - length_min)
+            if length_max != length_min else 1.0
+        )
+
 
     return JSONResponse(content=sentiments)
