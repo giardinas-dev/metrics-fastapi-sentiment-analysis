@@ -65,4 +65,4 @@ async def get_metrics_json():
         "sentiments": sentiments
     }
 
-    return JSONResponse(content=output)
+    return JSONResponse(content=sentiments)
